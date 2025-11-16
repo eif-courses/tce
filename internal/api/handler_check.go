@@ -2,110 +2,95 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/eif-courses/tce/internal/analyzer"
-	"github.com/eif-courses/tce/internal/docx"
+	"github.com/eif-courses/tce/internal/docparser"
 )
 
-// DTOs returned to frontend (match your Nuxt interfaces)
-
-type sectionDTO struct {
-	ID          string `json:"id"`
-	Label       string `json:"label"`
-	Requirement string `json:"requirement"`
-	Issues      int    `json:"issues"`
-}
-
-type paragraphDTO struct {
-	ID        string `json:"id"`
-	SectionID string `json:"sectionId"`
-	Text      string `json:"text"`
-}
-
-type commentDTO struct {
-	ID           string `json:"id"`
-	ParagraphID  string `json:"paragraphId"`
-	Category     string `json:"category"`
-	Severity     string `json:"severity"`
-	SectionLabel string `json:"sectionLabel"`
-	Title        string `json:"title"`
-	Message      string `json:"message"`
-	Suggestion   string `json:"suggestion,omitempty"`
-}
-
-type checkResponse struct {
-	Sections   []sectionDTO   `json:"sections"`
-	Paragraphs []paragraphDTO `json:"paragraphs"`
-	Comments   []commentDTO   `json:"comments"`
-}
-
-// CheckHandler handles POST /api/tce/check
-func CheckHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(50 << 20); err != nil {
-		http.Error(w, "cannot parse form", http.StatusBadRequest)
+// POST /api/tce/check
+func HandleCheck(w http.ResponseWriter, r *http.Request) {
+	// Limit upload size (25MB)
+	err := r.ParseMultipartForm(25 << 20)
+	if err != nil {
+		httpError(w, "failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	file, _, err := r.FormFile("file")
+	// Retrieve file
+	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "file field 'file' is required", http.StatusBadRequest)
+		httpError(w, "no file uploaded", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// ✨ NEW: extract plain text from DOCX using pandoc
-	plain, err := docx.ExtractTextFromDocx(file)
+	fmt.Printf("[TCE] Received file: %s\n", header.Filename)
+
+	// Step 1 — Parse DOCX → RawDoc
+	doc, err := docparser.ParseDOCX(file)
 	if err != nil {
-		http.Error(w, "failed to extract text: "+err.Error(), http.StatusInternalServerError)
+		httpError(w, "failed to parse DOCX: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Feed extracted text into analyzer
-	out := analyzer.Analyze(analyzer.Input{
-		PlainText: plain,
-	})
+	// Step 2 — Run analyzer rules
+	result := analyzer.Analyze(doc)
 
-	// map to DTOs for Nuxt
-	resp := checkResponse{
-		Sections:   make([]sectionDTO, 0, len(out.Sections)),
-		Paragraphs: make([]paragraphDTO, 0, len(out.Paragraphs)),
-		Comments:   make([]commentDTO, 0, len(out.Issues)),
+	// Step 3 — Return unified DTO JSON
+	resp := CheckResponse{
+		Sections:   toSectionDTO(result.Sections),
+		Paragraphs: toParagraphDTO(result.Paragraphs),
+		Comments:   toCommentDTO(result.Comments),
 	}
 
-	for _, s := range out.Sections {
-		resp.Sections = append(resp.Sections, sectionDTO{
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+}
+func toSectionDTO(in []analyzer.Section) []SectionDTO {
+	out := make([]SectionDTO, len(in))
+	for i, s := range in {
+		out[i] = SectionDTO{
 			ID:          s.ID,
 			Label:       s.Label,
 			Requirement: s.Requirement,
 			Issues:      s.Issues,
-		})
+		}
 	}
+	return out
+}
 
-	for _, p := range out.Paragraphs {
-		resp.Paragraphs = append(resp.Paragraphs, paragraphDTO{
+func toParagraphDTO(in []analyzer.Paragraph) []ParagraphDTO {
+	out := make([]ParagraphDTO, len(in))
+	for i, p := range in {
+		out[i] = ParagraphDTO{
 			ID:        p.ID,
 			SectionID: p.SectionID,
 			Text:      p.Text,
-		})
+		}
 	}
+	return out
+}
 
-	for _, issue := range out.Issues {
-		resp.Comments = append(resp.Comments, commentDTO{
-			ID:           issue.ID,
-			ParagraphID:  issue.ParagraphID,
-			Category:     issue.Category,
-			Severity:     issue.Severity,
-			SectionLabel: issue.SectionLabel,
-			Title:        issue.Title,
-			Message:      issue.Message,
-			Suggestion:   issue.Suggestion,
-		})
+func toCommentDTO(in []analyzer.Comment) []CommentDTO {
+	out := make([]CommentDTO, len(in))
+	for i, c := range in {
+		out[i] = CommentDTO{
+			ID:           c.ID,
+			ParagraphID:  c.ParagraphID,
+			Category:     c.Category,
+			Severity:     c.Severity,
+			SectionLabel: c.SectionLabel,
+			Title:        c.Title,
+			Message:      c.Message,
+		}
 	}
+	return out
+}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-		return
-	}
+// Generic error sender
+func httpError(w http.ResponseWriter, msg string, code int) {
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(ErrorResponse{Error: msg})
 }
