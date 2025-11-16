@@ -1,0 +1,64 @@
+program: "se"
+lang: "en"
+
+sections:
+  - id: "intro"
+    label: "Introduction"
+    requirement: "2–4 pages"
+    min_pages: 2
+    required: true
+
+  - id: "analysis"
+    label: "Analytical part"
+    requirement: "≥10 pages"
+    min_pages: 10
+    required: true
+
+  - id: "design"
+    label: "Design part"
+    requirement: "≥8 pages"
+    min_pages: 8
+    required: true
+
+  - id: "implementation"
+    label: "Implementation part"
+    requirement: "≥8 pages"
+    min_pages: 8
+    required: true
+
+  - id: "testing"
+    label: "Testing and evaluation"
+    requirement: "≥3 pages"
+    min_pages: 3
+    required: true
+
+  - id: "conclusion"
+    label: "Conclusions and recommendations"
+    requirement: "1–3 pages"
+    min_pages: 1
+    required: true
+
+  - id: "refs"
+    label: "References"
+    requirement: "≥15 sources"
+    min_pages: 0
+    required: true
+
+  - id: "annexes"
+    label: "Appendices"
+    requirement: "Optional"
+    min_pages: 0
+    required: false
+
+language:
+  first_person:
+    - " i "
+    - " my "
+    - " me "
+    - " we "
+    - " our "
+  informal:
+    - "cool"
+    - "nice"
+    - "kind of"
+    - "sort of"

@@ -1,0 +1,71 @@
+program: "pi"
+lang: "en"
+
+sections:
+  - id: "intro"
+    label: "Introduction"
+    requirement: "2–5 pages"
+    min_pages: 2
+    required: true
+
+  - id: "task"
+    label: "Practice task and system"
+    requirement: "3–5 pages"
+    min_pages: 3
+    required: true
+
+  - id: "fr"
+    label: "Functional requirements"
+    requirement: "≥3 pages"
+    min_pages: 3
+    required: true
+
+  - id: "analysis"
+    label: "Task analysis"
+    requirement: "≥10 pages"
+    min_pages: 10
+    required: true
+
+  - id: "implementation"
+    label: "Solution implementation"
+    requirement: "≥5 pages"
+    min_pages: 5
+    required: false
+
+  - id: "results"
+    label: "Results and evaluation"
+    requirement: "2–4 pages"
+    min_pages: 2
+    required: false
+
+  - id: "conclusion"
+    label: "Conclusions"
+    requirement: "1–2 pages"
+    min_pages: 1
+    required: true
+
+  - id: "refs"
+    label: "References"
+    requirement: "≥10 sources"
+    min_pages: 0
+    required: true
+
+  - id: "annexes"
+    label: "Appendices"
+    requirement: "Optional"
+    min_pages: 0
+    required: false
+
+language:
+  first_person:
+    - " i "
+    - " my "
+    - " me "
+    - " we "
+    - " our "
+  informal:
+    - "cool"
+    - "nice"
+    - "kind of"
+    - "sort of"
+    - "a lot"

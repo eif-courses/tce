@@ -1,0 +1,63 @@
+program: "se"
+lang: "lt"
+
+sections:
+  - id: "intro"
+    label: "Įvadas"
+    requirement: "2–4 psl."
+    min_pages: 2
+    required: true
+
+  - id: "analysis"
+    label: "Analitinė dalis"
+    requirement: "≥10 psl."
+    min_pages: 10
+    required: true
+
+  - id: "design"
+    label: "Projektinė dalis"
+    requirement: "≥8 psl."
+    min_pages: 8
+    required: true
+
+  - id: "implementation"
+    label: "Realizavimo dalis"
+    requirement: "≥8 psl."
+    min_pages: 8
+    required: true
+
+  - id: "testing"
+    label: "Testavimas ir vertinimas"
+    requirement: "≥3 psl."
+    min_pages: 3
+    required: true
+
+  - id: "conclusion"
+    label: "Išvados ir rekomendacijos"
+    requirement: "1–3 psl."
+    min_pages: 1
+    required: true
+
+  - id: "refs"
+    label: "Literatūra"
+    requirement: "≥15 šaltinių"
+    min_pages: 0
+    required: true
+
+  - id: "annexes"
+    label: "Priedai"
+    requirement: "Pagal poreikį"
+    min_pages: 0
+    required: false
+
+language:
+  first_person:
+    - " aš "
+    - " mano "
+    - " mes "
+    - " mūsų "
+  informal:
+    - "šiaip"
+    - "fainas"
+    - "super"
+    - "žiauriai"

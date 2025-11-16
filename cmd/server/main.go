@@ -4,13 +4,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/eif-courses/tce/internal/api"
+	"github.com/eif-courses/tce/internal/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
-
-	"github.com/eif-courses/tce/internal/api"
-	"github.com/eif-courses/tce/internal/util"
 )
 
 func main() {
@@ -55,7 +54,6 @@ func main() {
 		zap.String("port", port),
 	)
 
-	// === Start server ===
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		util.Log.Fatal("server crashed", zap.Error(err))
 	}

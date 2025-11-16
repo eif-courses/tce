@@ -1,0 +1,72 @@
+program: "pi"
+lang: "lt"
+
+sections:
+  - id: "intro"
+    label: "Įvadas"
+    requirement: "2–5 psl."
+    min_pages: 2
+    required: true
+
+  - id: "task"
+    label: "Praktikos užduotis ir sistema"
+    requirement: "3–5 psl."
+    min_pages: 3
+    required: true
+
+  - id: "fr"
+    label: "Funkciniai reikalavimai"
+    requirement: "≥3 psl."
+    min_pages: 3
+    required: true
+
+  - id: "analysis"
+    label: "Užduoties analizė"
+    requirement: "≥10 psl."
+    min_pages: 10
+    required: true
+
+  # optional/recommended sections – will show in UI, rules may use later
+  - id: "implementation"
+    label: "Sprendimo realizavimas"
+    requirement: "≥5 psl."
+    min_pages: 5
+    required: false
+
+  - id: "results"
+    label: "Rezultatai ir vertinimas"
+    requirement: "2–4 psl."
+    min_pages: 2
+    required: false
+
+  - id: "conclusion"
+    label: "Išvados"
+    requirement: "1–2 psl."
+    min_pages: 1
+    required: true
+
+  - id: "refs"
+    label: "Literatūra"
+    requirement: "≥10 šaltinių"
+    min_pages: 0
+    required: true
+
+  - id: "annexes"
+    label: "Priedai"
+    requirement: "Pagal poreikį"
+    min_pages: 0
+    required: false
+
+language:
+  first_person:
+    - " aš "
+    - " mano "
+    - " man "
+    - " mes "
+    - " mūsų "
+  informal:
+    - "šiaip"
+    - "fainas"
+    - "super"
+    - "žiauriai"
+    - "tipo"

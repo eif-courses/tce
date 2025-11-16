@@ -6,7 +6,7 @@ import (
 )
 
 // ParseSections converts a CleanDoc into Sections + Paragraphs.
-func ParseSections(doc *CleanDoc) ([]Section, []Paragraph) {
+func ParseSections(doc *CleanDoc, lang string) ([]Section, []Paragraph) {
 	var (
 		sections       []Section
 		paragraphs     []Paragraph
@@ -14,12 +14,24 @@ func ParseSections(doc *CleanDoc) ([]Section, []Paragraph) {
 		index          = 1
 	)
 
-	sectionMap := map[string]string{
-		"ĮVADAS":                  "intro",
-		"PRAKTIKOS UŽDUOTIS":      "task",
-		"PRAKTIKOS UŽDUOTIS IR":   "task",
-		"FUNKCINIAI REIKALAVIMAI": "fr",
-		"UŽDUOTIES ANALIZĖ":       "analysis",
+	// Language-aware heading map
+	sectionMap := make(map[string]string)
+
+	lang = strings.ToLower(lang)
+	switch lang {
+	case "en":
+		sectionMap["INTRODUCTION"] = "intro"
+		sectionMap["TASK DESCRIPTION"] = "task"
+		sectionMap["PRACTICE TASK"] = "task"
+		sectionMap["FUNCTIONAL REQUIREMENTS"] = "fr"
+		sectionMap["TASK ANALYSIS"] = "analysis"
+		sectionMap["PROBLEM ANALYSIS"] = "analysis"
+	default: // lt
+		sectionMap["ĮVADAS"] = "intro"
+		sectionMap["PRAKTIKOS UŽDUOTIS"] = "task"
+		sectionMap["PRAKTIKOS UŽDUOTIS IR"] = "task"
+		sectionMap["FUNKCINIAI REIKALAVIMAI"] = "fr"
+		sectionMap["UŽDUOTIES ANALIZĖ"] = "analysis"
 	}
 
 	requirements := map[string]string{
@@ -30,7 +42,7 @@ func ParseSections(doc *CleanDoc) ([]Section, []Paragraph) {
 		"unknown":  "Nenurodyta",
 	}
 
-	// build section list
+	// build sections list
 	for label, id := range sectionMap {
 		sections = append(sections, Section{
 			ID:          id,
@@ -49,7 +61,7 @@ func ParseSections(doc *CleanDoc) ([]Section, []Paragraph) {
 	for _, text := range doc.Paragraphs {
 		upper := strings.ToUpper(strings.TrimSpace(text))
 
-		// check if this is a heading
+		// heading detection
 		for heading, id := range sectionMap {
 			if strings.HasPrefix(upper, heading) {
 				currentSection = id

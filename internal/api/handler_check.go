@@ -1,19 +1,21 @@
+// internal/api/check.go
 package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/eif-courses/tce/internal/analyzer"
+	"github.com/eif-courses/tce/internal/config"
 	"github.com/eif-courses/tce/internal/docparser"
+	"github.com/eif-courses/tce/internal/util"
+	"go.uber.org/zap"
 )
 
 // POST /api/tce/check
 func HandleCheck(w http.ResponseWriter, r *http.Request) {
 	// Limit upload size (25MB)
-	err := r.ParseMultipartForm(25 << 20)
-	if err != nil {
+	if err := r.ParseMultipartForm(25 << 20); err != nil {
 		httpError(w, "failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -26,19 +28,44 @@ func HandleCheck(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fmt.Printf("[TCE] Received file: %s\n", header.Filename)
+	// Language (lt | en)
+	lang := r.FormValue("lang")
+	if lang != "en" {
+		lang = "lt"
+	}
 
-	// Step 1 — Parse DOCX → RawDoc
-	doc, err := docparser.ParseDOCX(file)
+	// Study program (pi | se | etc). Default to "pi"
+	program := r.FormValue("program")
+	if program == "" {
+		program = "pi"
+	}
+
+	util.Log.Info("TCE: received file",
+		zap.String("filename", header.Filename),
+		zap.String("lang", lang),
+		zap.String("program", program),
+	)
+
+	// Load program+language profile from config/rules_<program>_<lang>.yaml
+	if err := config.LoadRulesForProfile(program, lang); err != nil {
+		util.Log.Warn("Failed to load rules profile, using last/empty profile",
+			zap.String("program", program),
+			zap.String("lang", lang),
+			zap.Error(err),
+		)
+	}
+
+	// Step 1 — Parse DOCX → raw paragraphs
+	raw, err := docparser.ParseDOCX(file)
 	if err != nil {
 		httpError(w, "failed to parse DOCX: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Step 2 — Run analyzer rules
-	result := analyzer.Analyze(doc)
+	result := analyzer.Analyze(raw, lang)
 
-	// Step 3 — Return unified DTO JSON
+	// Step 3 — Map to DTO and return JSON
 	resp := CheckResponse{
 		Sections:   toSectionDTO(result.Sections),
 		Paragraphs: toParagraphDTO(result.Paragraphs),
@@ -48,6 +75,7 @@ func HandleCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
 }
+
 func toSectionDTO(in []analyzer.Section) []SectionDTO {
 	out := make([]SectionDTO, len(in))
 	for i, s := range in {
@@ -91,6 +119,7 @@ func toCommentDTO(in []analyzer.Comment) []CommentDTO {
 
 // Generic error sender
 func httpError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(ErrorResponse{Error: msg})
 }
