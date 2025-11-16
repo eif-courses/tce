@@ -44,6 +44,10 @@ func main() {
 	r.Get("/api/tce/health", api.HandleHealth)
 	r.Post("/api/tce/check", api.HandleCheck)
 
+	// LLM endpoints
+	r.Post("/api/tce/suggest-rewrite", api.HandleLLMSuggestRewrite)
+	//r.Post("/api/tce/llm/enrich-comment", api.HandleLLMEnrichComment)
+
 	// === Server port ===
 	port := os.Getenv("PORT")
 	if port == "" {
