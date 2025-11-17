@@ -67,9 +67,10 @@ func HandleCheck(w http.ResponseWriter, r *http.Request) {
 
 	// Step 3 — Map to DTO and return JSON
 	resp := CheckResponse{
-		Sections:   toSectionDTO(result.Sections),
-		Paragraphs: toParagraphDTO(result.Paragraphs),
-		Comments:   toCommentDTO(result.Comments),
+		Sections:      toSectionDTO(result.Sections),
+		Paragraphs:    toParagraphDTO(result.Paragraphs),
+		ContentBlocks: toContentBlocksDTO(result.ContentBlocks),
+		Comments:      toCommentDTO(result.Comments),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -97,6 +98,14 @@ func toParagraphDTO(in []analyzer.Paragraph) []ParagraphDTO {
 			SectionID: p.SectionID,
 			Text:      p.Text,
 		}
+	}
+	return out
+}
+
+func toContentBlocksDTO(in []analyzer.ContentBlock) []ContentBlockDTO {
+	out := make([]ContentBlockDTO, len(in))
+	for i, block := range in {
+		out[i] = toContentBlockDTO(block)
 	}
 	return out
 }
