@@ -810,7 +810,7 @@ function getImageMimeType(base64: string): string {
               <p class="text-sm font-medium text-slate-900 line-clamp-2">
                 {{ comment.title }}
               </p>
-              <p class="text-xs text-slate-600 mt-1 line-clamp-3">
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed whitespace-pre-line">
                 {{ comment.message }}
               </p>
 
