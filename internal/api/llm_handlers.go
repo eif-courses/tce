@@ -64,6 +64,6 @@ func HandleLLMSuggestRewrite(w http.ResponseWriter, r *http.Request) {
 		Suggestion:  suggestion,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(resp)
 }

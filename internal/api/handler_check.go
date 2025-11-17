@@ -73,7 +73,7 @@ func HandleCheck(w http.ResponseWriter, r *http.Request) {
 		Comments:      toCommentDTO(result.Comments),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
@@ -128,7 +128,7 @@ func toCommentDTO(in []analyzer.Comment) []CommentDTO {
 
 // Generic error sender
 func httpError(w http.ResponseWriter, msg string, code int) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(ErrorResponse{Error: msg})
 }
