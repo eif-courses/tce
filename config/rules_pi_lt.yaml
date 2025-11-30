@@ -1,72 +1,247 @@
-program: "pi"
+program: "pi-bd"          # Practical Informatics - Baigiamasis darbas
 lang: "lt"
+degree: "bachelor"
+version: "0.1"
 
-sections:
-  - id: "intro"
-    label: "Įvadas"
-    requirement: "2–5 psl."
-    min_pages: 2
-    required: true
+meta:
+  description: "Rules for Practical Informatics bachelor thesis structure, formatting, and style."
+  source_docs:
+    - "Bendrieji studijų rašto darbų reikalavimai_rev2.pdf"
+    - "PI-BD-METODINIAI.pdf"
 
-  - id: "task"
-    label: "Praktikos užduotis ir sistema"
-    requirement: "3–5 psl."
-    min_pages: 3
-    required: true
+# 1. STRUCTURE: sections, order, minimum pages
+structure:
+  required_order:
+    - "intro"
+    - "analysis"
+    - "implementation"
+    - "results"
+    - "conclusion"
+    - "refs"
+    - "annexes"
 
-  - id: "fr"
-    label: "Funkciniai reikalavimai"
-    requirement: "≥3 psl."
-    min_pages: 3
-    required: true
+  sections:
+    - id: "intro"
+      label: "Įvadas"
+      min_pages: 2
+      max_pages: 5
+      required: true
+      must_contain_keywords:
+        - "tikslas"
+        - "uždavin"      # uždaviniai, uždavinys
+      forbidden_phrases:
+        - "praktikos ataskaita"
+        - "baigiamosios praktikos ataskaita"
 
-  - id: "analysis"
-    label: "Užduoties analizė"
-    requirement: "≥10 psl."
-    min_pages: 10
-    required: true
+    - id: "analysis"
+      label: "Analitinė dalis"
+      min_pages: 8
+      required: true
+      must_contain_keywords:
+        - "literatūra"
+        - "šaltin"
+        - "analiz"
+      require_citations: true
 
-  # optional/recommended sections – will show in UI, rules may use later
-  - id: "implementation"
-    label: "Sprendimo realizavimas"
-    requirement: "≥5 psl."
-    min_pages: 5
-    required: false
+    - id: "implementation"
+      label: "Sprendimo realizavimas"
+      min_pages: 5
+      required: true
+      must_contain_keywords:
+        - "architektūra"
+        - "modul"
+        - "diagrama"
 
-  - id: "results"
-    label: "Rezultatai ir vertinimas"
-    requirement: "2–4 psl."
-    min_pages: 2
-    required: false
+    - id: "results"
+      label: "Rezultatai ir vertinimas"
+      min_pages: 2
+      required: true
+      must_contain_keywords:
+        - "rezultat"
+        - "vertinim"
 
-  - id: "conclusion"
-    label: "Išvados"
-    requirement: "1–2 psl."
-    min_pages: 1
-    required: true
+    - id: "conclusion"
+      label: "Išvados"
+      min_pages: 1
+      max_pages: 3
+      required: true
+      forbidden_patterns:
+        - "Uždaviniai"       # copy-paste from task section
+        - "Uždavinys"        # list of tasks instead of conclusions
 
-  - id: "refs"
-    label: "Literatūra"
-    requirement: "≥10 šaltinių"
-    min_pages: 0
-    required: true
+    - id: "refs"
+      label: "Literatūra"
+      min_pages: 0
+      required: true
 
-  - id: "annexes"
-    label: "Priedai"
-    requirement: "Pagal poreikį"
-    min_pages: 0
-    required: false
+    - id: "annexes"
+      label: "Priedai"
+      min_pages: 0
+      required: false
 
+# 2. FORMATTING / LAYOUT RULES
+layout:
+  body:
+    font_family: "Times New Roman"
+    font_size_pt: 12
+    line_spacing: 1.5
+    justify: true
+    first_line_indent_cm: 1.27
+
+  headings:
+    h1:
+      font_size_pt: 14
+      uppercase: true
+      bold: true
+      align: "center"
+    h2:
+      font_size_pt: 14
+      uppercase: false
+      bold: true
+      align: "center"
+    h3:
+      font_size_pt: 12
+      uppercase: false
+      bold: true
+      align: "left"
+
+# 3. LANGUAGE & STYLE RULES
 language:
+  # tokens that suggest non-academic style
   first_person:
     - " aš "
+    - " aš,"
     - " mano "
-    - " man "
     - " mes "
     - " mūsų "
+    - " mums "
   informal:
     - "šiaip"
+    - "tipo"
     - "fainas"
     - "super"
     - "žiauriai"
-    - "tipo"
+    - "cool"
+    - "nice"
+    - "wow"
+  max_paragraph_length_chars: 1200   # flag “walls of text”
+  allow_first_person_in_sections:
+    - "annexes"   # if you want to allow in reflection or annex
+
+# 4. FIGURES & TABLES
+figures_tables:
+  require_caption: true
+  figure_caption_pattern: "^\\s*(\\d+\\.)?\\s*([Pp]av\\.|Pav\\.)"
+  table_caption_pattern: "^\\s*(\\d+\\.)?\\s*([Ll]entelė|Lentelė)"
+  require_reference_in_text: true
+  reference_patterns:
+    - "pav\\."
+    - "lentelė"
+    - "lentelės"
+  forbid_duplicate_data: false   # can be implemented later
+
+# 5. REFERENCES / CITATIONS (APA-ish)
+references:
+  min_sources: 15
+  section_id: "refs"
+  intext_patterns:
+    - "\\([A-ZĄČĘĖĮŠŲŪŽ][a-ząčęėįšųūž]+,\\s*\\d{4}\\)"   # (Pavardenis, 2020)
+  forbidden_intext_patterns:
+    - "\\[\\d+\\]"     # numeric style [1], [2]
+  allow_web_sources: true
+  web_source_limit_ratio: 0.4   # at most 40% of references can be web
+  require_year: true
+  require_author_or_org: true
+
+# 6. CONTENT-SPECIFIC RULES
+content_rules:
+  # Avoid mixing internship report and thesis terminology
+  forbidden_global_phrases:
+    - "praktikos ataskaita"
+    - "praktikos tikslas"
+    - "baigiamosios praktikos"
+
+  # Basic “methodology must exist” check inside analysis/implementation
+  methodology_required:
+    sections:
+      - "analysis"
+      - "implementation"
+    must_contain_any:
+      - "metodolog"
+      - "metodas"
+      - "metodika"
+      - "tyrimas"
+      - "eksperiment"
+
+  # Check that conclusions contain words like “išvados”, “rezultatai”, not just “uždavinys”
+  conclusions_quality:
+    section_id: "conclusion"
+    must_contain_any:
+      - "išvad"
+      - "rezultat"
+      - "pasiūlym"
+    forbidden_any:
+      - "uždaviniai:"
+      - "užduotys:"
+
+# 7. SEVERITY LEVELS – how you want to display them in UI
+severity:
+  missing_required_section: "critical"
+  section_too_short: "major"
+  wrong_order: "major"
+  formatting_violation: "minor"
+  missing_figure_caption: "major"
+  missing_figure_reference: "major"
+  informal_language: "minor"
+  first_person_usage: "minor"
+  missing_citation_in_theory: "major"
+  low_reference_count: "major"
+  forbidden_phrase: "critical"
+
+# 8. CODE FRAGMENTS
+code:
+  detect_blocks: true
+
+  # If code is printed in main sections, limit length
+  max_inline_lines: 15         # anything above = must go to appendix
+
+  # Patterns to detect code (regex or keyword heuristics)
+  detect_patterns:
+    - "{"
+    - "};"
+    - "class "
+    - "public "
+    - "private "
+    - "function "
+    - "async "
+    - "const "
+    - "var "
+    - "import "
+    - "package "
+    - "#include"
+    - "=>"
+    - "</"
+    - ">"
+
+  # Disallow long code in primary chapters
+  forbidden_sections:
+    - "intro"
+    - "analysis"
+    - "results"
+    - "conclusion"
+    - "refs"
+
+  # Allowed long fragments only in appendices
+  allowed_only_section: "annexes"
+
+  # Font requirement (if DOCX metadata or style is available)
+  required_font_family:
+    - "Courier New"
+    - "Consolas"
+    - "Source Code Pro"
+    - "Fira Code"
+
+  # Code listings must be labeled correctly
+  caption_required: true
+  caption_pattern: "^(Listing|Programa|Fragmentas)\\s+\\d+"
+
