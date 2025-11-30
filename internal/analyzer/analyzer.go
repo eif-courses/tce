@@ -9,15 +9,19 @@ func Analyze(raw *docparser.RawDoc, lang string) Result {
 	// 2) Detect sections and assign paragraph IDs (language-aware)
 	sections, paragraphs := docparser.ParseSections(clean, lang)
 
-	// 3) Run rules (structure/content/etc.)
+	// 3) Process content blocks if available
+	contentBlocks := docparser.ParseContentBlocks(raw.ContentBlocks, lang)
+
+	// 4) Run rules (structure/content/etc.)
 	comments, sectionsWithCounts := runRules(sections, paragraphs)
 
-	// 4) Localize comments if necessary (EN vs LT)
+	// 5) Localize comments if necessary (EN vs LT)
 	comments = LocalizeComments(comments, lang)
 
 	return Result{
-		Sections:   sectionsWithCounts,
-		Paragraphs: paragraphs,
-		Comments:   comments,
+		Sections:      sectionsWithCounts,
+		Paragraphs:    paragraphs,
+		ContentBlocks: contentBlocks,
+		Comments:      comments,
 	}
 }

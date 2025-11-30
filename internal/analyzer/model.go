@@ -4,10 +4,11 @@ import "github.com/eif-courses/tce/internal/docparser"
 
 type Section = docparser.Section
 type Paragraph = docparser.Paragraph
+type ContentBlock = docparser.ContentBlock
 
 type Comment struct {
 	ID           string
-	ParagraphID  string
+	ParagraphID  string // Can also reference ContentBlock ID
 	Category     string // structure/content/language/formatting
 	Severity     string // major/minor
 	SectionLabel string
@@ -16,7 +17,8 @@ type Comment struct {
 }
 
 type Result struct {
-	Sections   []Section
-	Paragraphs []Paragraph
-	Comments   []Comment
+	Sections      []Section
+	Paragraphs    []Paragraph
+	ContentBlocks []ContentBlock // Rich content blocks
+	Comments      []Comment
 }
