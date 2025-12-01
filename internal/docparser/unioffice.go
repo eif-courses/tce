@@ -29,11 +29,22 @@ func ParseDOCX(r io.Reader) (*RawDoc, error) {
 
 	// Try unioffice parser first (native Go, no external dependencies)
 	doc, err := ParseDOCXWithUnioffice(bytes.NewReader(buf.Bytes()))
-	if err == nil && doc != nil && len(doc.Paragraphs) > 0 {
+	if err == nil && doc != nil {
+		// Return unioffice result even if empty - it successfully parsed the document
 		return doc, nil
 	}
 
-	// Fallback to pandoc if unioffice fails
+	// Only fallback to pandoc if unioffice had an error
+	// Check if pandoc is available first
+	if _, err := exec.LookPath("pandoc"); err != nil {
+		// Pandoc not available, return unioffice result or error
+		if doc != nil {
+			return doc, nil
+		}
+		return nil, fmt.Errorf("failed to parse DOCX: unioffice error (%v) and pandoc not available", err)
+	}
+
+	// Fallback to pandoc if available
 	return parseDOCXWithPandoc(bytes.NewReader(buf.Bytes()))
 }
 
