@@ -17,16 +17,28 @@ func runRules(sections []Section, paragraphs []Paragraph) ([]Comment, []Section)
 	sectionIndex := indexSections(sections)
 
 	rules := []Rule{
+		// Basic structure rules
 		ruleIntroHasGoal{},
 		ruleIntroHasTasks{},
 		ruleRequiredSections{},
-		ruleSectionOrder{},
 		ruleSectionMinLength{},
 		ruleFunctionalRequirements{},
 
-		// language / style
+		// Language / style rules
 		ruleFirstPersonStyle{},
 		ruleInformalStyle{},
+
+		// YAML-based comprehensive rules
+		ruleForbiddenPhrases{},
+		ruleSectionForbiddenPhrases{},
+		ruleMustContainKeywords{},
+		ruleRequireCitations{},
+		ruleStrictSectionOrder{},
+		ruleMaxPages{},
+		ruleCodeBlocks{},
+		ruleMethodologyRequired{},
+		ruleConclusionsQuality{},
+		ruleLongParagraphs{},
 	}
 
 	var comments []Comment

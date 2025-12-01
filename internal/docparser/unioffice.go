@@ -18,8 +18,27 @@ type RawDoc struct {
 	ContentBlocks []ContentBlock // Rich content blocks (new)
 }
 
-// ParseDOCX reads a DOCX file from r and extracts paragraphs using pandoc.
+// ParseDOCX reads a DOCX file from r and extracts paragraphs.
+// It tries unioffice first (native Go), then falls back to pandoc if needed.
 func ParseDOCX(r io.Reader) (*RawDoc, error) {
+	// Save input to a buffer so we can try multiple parsers
+	buf := &bytes.Buffer{}
+	if _, err := io.Copy(buf, r); err != nil {
+		return nil, fmt.Errorf("buffer docx: %w", err)
+	}
+
+	// Try unioffice parser first (native Go, no external dependencies)
+	doc, err := ParseDOCXWithUnioffice(bytes.NewReader(buf.Bytes()))
+	if err == nil && doc != nil && len(doc.Paragraphs) > 0 {
+		return doc, nil
+	}
+
+	// Fallback to pandoc if unioffice fails
+	return parseDOCXWithPandoc(bytes.NewReader(buf.Bytes()))
+}
+
+// parseDOCXWithPandoc uses external pandoc command (legacy method)
+func parseDOCXWithPandoc(r io.Reader) (*RawDoc, error) {
 	// 1) Save to temp file
 	tmp, err := os.CreateTemp("", "tce-*.docx")
 	if err != nil {

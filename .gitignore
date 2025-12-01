@@ -1,1 +1,6 @@
 .env
+tce-server
+*.exe
+*.dll
+*.so
+*.dylib
