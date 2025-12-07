@@ -1,240 +1,381 @@
-# Nuxt 4 + Nitro Migration Guide
+# Nuxt 4 Full Conversion Guide
 
 ## Overview
 
-TCE has been migrated from a separate Go HTTP backend + Vue.js frontend to a unified **Nuxt 4** application with **Nitro** server engine. This provides a more integrated development experience while maintaining the existing Go backend for document analysis.
+TCE has been completely rewritten as a **Nuxt 4** application with **Nitro** server. All functionality has been ported from Go to Node.js/TypeScript:
+- DOCX parsing with mammoth.js
+- Document analysis engine in TypeScript
+- YAML rule loading and application
+- OpenAI integration for LLM suggestions
+
+Single integrated application. No separate backend needed.
 
 ## Architecture
 
-### Before (Separate Stack)
+### Previous Stack (Go + Vue.js)
 ```
-Frontend (Vue.js)  →  Go Backend
+Frontend (Vue.js)  →  Go Backend  →  YAML Rules + OpenAI
 Port 3000              Port 8080
 ```
 
-### After (Unified Stack)
+### New Stack (Nuxt 4 Only)
 ```
-Nuxt 4 Application (Frontend + Nitro API Proxy)
-Port 3000
-    ↓
-  Nitro Server
-    ↓
-  Proxy Routes (/api/tce/*)
-    ↓
-  Go Backend (Document Analysis Engine)
-  Port 8080
+Nuxt 4 Application (Single Port)
+├── Frontend (Vue 3)
+└── Nitro Server (Node.js)
+    ├── DOCX Parser (mammoth.js)
+    ├── Analyzer Engine (TypeScript)
+    ├── Rule Loader (YAML)
+    └── LLM Handler (OpenAI)
 ```
 
-## Key Changes
+## What's New
 
-### 1. Project Structure
+### Complete Rewrite
+- **DOCX Parser**: Now uses `mammoth.js` instead of Go's `unioffice`
+- **Analyzer Engine**: Ported from Go to TypeScript
+- **Rule System**: YAML rules still used, now loaded by Node.js
+- **LLM Integration**: Direct OpenAI SDK in Nitro
 
-**New Directories:**
-- `/app.vue` - Root application component
-- `/pages/` - Nuxt pages (currently index.vue for main app)
-- `/components/` - Reusable Vue components
-- `/server/` - Nitro server configuration
-  - `/server/api/tce/` - API route handlers (proxy to Go backend)
-- `/public/` - Static assets
+### Key Features Preserved
+- Multi-language support (Lithuanian/English)
+- Study program selection (PI/SE)
+- Real-time document analysis
+- AI-powered text suggestions
+- Interactive 3-column UI
+- Comment categorization and filtering
 
-**Updated Configuration:**
-- `nuxt.config.ts` - Nuxt configuration with Nitro proxy settings
-- `tsconfig.json` - TypeScript configuration
-- `package.json` - Node.js dependencies
+## Project Structure
 
-**Unchanged:**
-- `/cmd/` - Go backend entry point (runs separately)
-- `/internal/` - Go backend logic
-- `/config/` - YAML rule files
-- `go.mod / go.sum` - Go dependencies
+```
+/tce/
+├── app.vue                    # Root Nuxt component
+├── pages/
+│   └── index.vue              # Main application page
+├── server/
+│   ├── api/tce/
+│   │   ├── health.ts          # Health check endpoint
+│   │   ├── check.ts           # Document analysis
+│   │   └── suggest-rewrite.ts # LLM suggestions
+│   └── utils/
+│       ├── types.ts           # TypeScript interfaces
+│       ├── docparser.ts       # DOCX parsing (mammoth)
+│       ├── config.ts          # YAML rule loading
+│       ├── analyzer.ts        # Analysis engine
+│       └── llm.ts             # OpenAI integration
+├── config/                    # YAML rule files (unchanged)
+├── public/                    # Static assets
+├── nuxt.config.ts            # Nuxt configuration
+├── tsconfig.json             # TypeScript config
+├── package.json              # Node.js dependencies
+└── .env.example              # Environment template
+```
 
-### 2. Frontend Changes
-
-The Vue.js frontend has been integrated into Nuxt:
-- Moved from `/frontend/pages/index.vue` → `/pages/index.vue`
-- Updated API calls to use relative paths (`/api/tce/*` instead of `http://localhost:8080/api/tce/*`)
-- Uses `$fetch` (Nuxt's built-in composable) for API calls
-- Removed dependency on external UI component libraries (using vanilla HTML + Tailwind CSS)
-
-### 3. API Integration
-
-Nitro API routes in `/server/api/tce/`:
-- **`health.ts`** - Health check endpoint
-- **`check.ts`** - Document analysis endpoint (proxies file uploads to Go backend)
-- **`suggest-rewrite.ts`** - LLM rewrite suggestions endpoint
-
-These routes:
-- Forward requests to the Go backend
-- Handle request/response transformation if needed
-- Provide error handling and logging
-
-## Running the Application
+## Setup & Running
 
 ### Prerequisites
 
 1. **Node.js** (v18+ recommended)
-2. **Go backend** running on port 8080
+2. **OpenAI API Key** (for LLM suggestions)
 
-### Setup
+### Installation
 
-1. Copy `.env.example` to `.env`:
+1. Clone and navigate to project:
+   ```bash
+   cd tce
+   ```
+
+2. Copy environment template:
    ```bash
    cp .env.example .env
    ```
 
-2. Update `GO_BACKEND_URL` in `.env` if your Go backend is on a different URL
+3. Update `.env` with your OpenAI API key:
+   ```env
+   OPENAI_API_KEY=sk-your-key-here
+   PORT=3000
+   NODE_ENV=development
+   ```
 
-3. Install Node.js dependencies:
+4. Install dependencies:
    ```bash
    npm install
    ```
 
 ### Development
 
-**Terminal 1: Start the Go backend**
-```bash
-go run cmd/server/main.go
-```
-Backend will run on `http://localhost:8080`
-
-**Terminal 2: Start the Nuxt development server**
+Start the development server:
 ```bash
 npm run dev
 ```
-Frontend will be available at `http://localhost:3000`
 
-The Nitro server will automatically proxy API requests from `http://localhost:3000/api/tce/*` to your Go backend.
+Open `http://localhost:3000` in your browser.
+
+Features:
+- Hot Module Replacement (HMR) for instant updates
+- Server-side rendering (SSR) enabled
+- File watching for changes
 
 ### Production Build
 
+Build for production:
 ```bash
 npm run build
+```
+
+Preview the build:
+```bash
 npm run preview
 ```
 
-This builds the Nuxt application and previews it locally. For deployment, use the output from `npm run build`.
+The production build creates optimized output in `.output/` directory ready for deployment.
+
+## API Endpoints
+
+All endpoints are local (no external backend):
+
+### `GET /api/tce/health`
+Health check
+```json
+{
+  "status": "ok",
+  "engine": "TCE",
+  "version": "1.0.0",
+  "runtime": "Nuxt 4 + Nitro"
+}
+```
+
+### `POST /api/tce/check`
+Document analysis
+
+**Request:**
+```
+Form data:
+- file: DOCX document
+- lang: "lt" or "en"
+- program: "pi" or "se"
+```
+
+**Response:**
+```json
+{
+  "sections": [...],
+  "paragraphs": [...],
+  "contentBlocks": [...],
+  "comments": [...]
+}
+```
+
+### `POST /api/tce/suggest-rewrite`
+Generate improved text with OpenAI
+
+**Request:**
+```json
+{
+  "paragraphText": "...",
+  "commentTitle": "...",
+  "commentMessage": "...",
+  "lang": "lt"
+}
+```
+
+**Response:**
+```json
+{
+  "suggestion": "Improved text here..."
+}
+```
+
+## Core Components
+
+### Document Parser (`server/utils/docparser.ts`)
+- Parses DOCX files using mammoth.js
+- Extracts text, sections, and paragraphs
+- Detects academic document structure
+- Creates content blocks for UI rendering
+
+### Analyzer Engine (`server/utils/analyzer.ts`)
+- Applies YAML rules to parsed documents
+- Checks structure, language, content, formatting
+- Generates comments with severity levels
+- Categories: structure, content, language, formatting
+
+### Rule Loader (`server/utils/config.ts`)
+- Loads YAML rule files from `/config/` directory
+- Caches rules for performance
+- Supports different programs (PI, SE) and languages (LT, EN)
+
+### LLM Handler (`server/utils/llm.ts`)
+- Integrates with OpenAI API
+- Generates academic text suggestions
+- Supports Lithuanian and English prompts
+- Returns improved paragraphs addressing specific issues
 
 ## Environment Variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `PORT` | `3000` | Nuxt/Nitro server port |
-| `GO_BACKEND_URL` | `http://localhost:8080` | Go backend URL for API proxy |
-| `NODE_ENV` | `development` | Node.js environment |
+| `PORT` | `3000` | Server port |
+| `NODE_ENV` | `development` | Node environment |
+| `OPENAI_API_KEY` | (required) | OpenAI API key |
+| `OPENAI_MODEL` | `gpt-4o-mini` | LLM model to use |
 
-## API Routes
+## Frontend Integration
 
-All API routes are prefixed with `/api/tce/` and are proxied to the Go backend:
+The Vue.js component (`pages/index.vue`) features:
 
-### `GET /api/tce/health`
-- Health check endpoint
-- Response: `{ status: "ok", engine: "TCE" }`
+**Functionality:**
+- Document upload with drag-drop support
+- Language/program selection
+- Real-time analysis results
+- Interactive document viewer
+- Comment filtering and navigation
+- AI text suggestions per paragraph
 
-### `POST /api/tce/check`
-- Document analysis endpoint
-- Request: Multipart form with `file`, `lang`, `program`
-- Response: Analysis results (sections, paragraphs, comments)
-
-### `POST /api/tce/suggest-rewrite`
-- LLM rewrite suggestions
-- Request: JSON with paragraph text and comment details
-- Response: `{ suggestion: "..." }`
-
-## Frontend Features
-
-The migrated frontend maintains all original features:
-- Document upload (drag-and-drop ready)
-- Language selection (Lithuanian/English)
-- Study program selection (PI/SE)
-- Real-time document analysis
-- Issue visualization and filtering
-- AI-powered text suggestions (via OpenAI)
-- Responsive 3-column layout (summary | document | comments)
+**UI Layout:**
+- Left sidebar: Summary & statistics
+- Center: Document content viewer
+- Right sidebar: Issues & comments
 
 ## Development Tips
 
-### Modifying API Routes
+### Adding Rules
 
-API routes are in `/server/api/tce/`. To add or modify:
+YAML rule files are in `/config/`:
+- `rules_pi_lt.yaml` - Practical Informatics (Lithuanian)
+- `rules_pi_en.yaml` - Practical Informatics (English)
+- `rules_se_lt.yaml` - Software Engineering (Lithuanian)
+- `rules_se_en.yaml` - Software Engineering (English)
+
+Rules are loaded at runtime and cached for performance.
+
+### Extending the Analyzer
+
+Edit `server/utils/analyzer.ts` to add new checks:
 
 ```typescript
-// server/api/tce/myroute.ts
-export default defineEventHandler(async (event) => {
-  // Access request data
-  const body = await readBody(event)
-
-  // Forward to Go backend
-  const response = await fetch(`${goBackendUrl}/api/tce/myroute`, {
-    method: 'POST',
-    body: JSON.stringify(body)
+private checkMyCustomRule(
+  paragraphs: Paragraph[],
+  comments: Comment[]
+): void {
+  // Your logic here
+  comments.push({
+    id: `comment-${nanoid(8)}`,
+    paragraphId: 'my-para-id',
+    category: 'content',
+    severity: 'major',
+    sectionLabel: 'My Section',
+    title: 'Rule title',
+    message: 'Rule description'
   })
-
-  return response.json()
-})
+}
 ```
 
-### Adding Frontend Components
+Then call it from `analyze()` method.
 
-Create reusable components in `/components/`:
+### Debugging
 
-```vue
-<!-- components/MyComponent.vue -->
-<template>
-  <div>Component content</div>
-</template>
-
-<script setup lang="ts">
-// Component logic
-</script>
+Enable verbose logging:
+```typescript
+console.log('Debug info:', data)
 ```
 
-Then use them in pages:
-```vue
-<template>
-  <MyComponent />
-</template>
-```
+Check server logs in terminal running `npm run dev`.
 
-### Building for Deployment
+## Performance
 
-The production build creates a `/dist` directory with all static assets. Deploy the entire output to your hosting platform (Vercel, Netlify, etc.).
+- **Caching**: YAML rules cached in memory
+- **Streaming**: Large file uploads handled with streams
+- **Optimization**: Tree-shaking and code splitting in production build
+- **SSR**: Enabled for faster first page load
 
 ## Troubleshooting
 
-### "Cannot GET /api/tce/check"
-- Ensure Go backend is running on `http://localhost:8080`
-- Check `GO_BACKEND_URL` in `.env`
-- Verify the Go backend's port in its logs
+### "OPENAI_API_KEY is not set"
+```bash
+# Check your .env file
+cat .env
+# Make sure OPENAI_API_KEY is set with your actual key
+```
+
+### "Failed to parse DOCX file"
+- Ensure the file is a valid DOCX document
+- Check file size (should be < 50MB)
+- Verify mammoth.js is installed: `npm list mammoth`
 
 ### "Port 3000 already in use"
-- Change `PORT` in `.env` to an available port
-- Or kill the process using port 3000
+```bash
+# Change PORT in .env
+PORT=3001
+```
 
-### API requests fail with CORS errors
-- Ensure CORS is enabled on the Go backend
-- Check that both servers are accessible to each other
+### LLM suggestions not working
+- Verify OPENAI_API_KEY is correct
+- Check OpenAI API account has credits
+- Review server logs for errors
 
-## Migration Benefits
+## Deployment
 
-1. **Single Port** - Frontend and API on the same port (no CORS issues)
-2. **Integrated Development** - Better DX with Nuxt tooling
-3. **Shared Codebase** - Frontend and backend config in one place
-4. **Hot Module Replacement** - Faster development with HMR
-5. **Built-in Optimization** - Nuxt handles code splitting and bundling
-6. **Server Middleware** - Can add authentication, logging, etc. at Nitro level
+### Vercel
+1. Push to GitHub
+2. Connect repo to Vercel
+3. Set environment variables in Vercel dashboard
+4. Deploy (automatic on push)
 
-## Next Steps (Optional Enhancements)
+### Netlify
+```bash
+npm run build
+# Upload .output directory contents
+```
 
-- Add Tailwind CSS for better styling
-- Create reusable Vue components for sections
-- Add unit tests with Vitest
-- Configure SSR caching strategy
-- Add authentication if needed
-- Deploy to Vercel/Netlify for automatic deployments
+### Traditional Server
+```bash
+npm run build
+npm run preview
+# Or use PM2: pm2 start ".output/server/index.mjs"
+```
 
-## Support
+## Migration from Go Backend (if needed)
 
-For issues with the Nuxt 4 migration, refer to:
-- [Nuxt 4 Documentation](https://nuxt.com/docs)
-- [Nitro Server Documentation](https://nitro.unjs.io/)
-- [Original project README](./README.md)
+If you still need the old Go backend:
+1. Keep Go binary and YAML config files
+2. Old API calls go to `http://localhost:8080`
+3. But this Nuxt app works standalone
+
+## Testing
+
+Run unit tests (when added):
+```bash
+npm run test
+```
+
+Generate coverage report:
+```bash
+npm run test:coverage
+```
+
+## What Happened to the Go Code?
+
+The Go code is preserved in the repository but no longer used by Nuxt:
+- `/cmd/` - Original Go server (can be removed if not needed)
+- `/internal/` - Original Go packages
+- `go.mod / go.sum` - Go dependencies
+
+You can keep it for reference or to run separately if needed.
+
+## Support & Resources
+
+- [Nuxt 4 Documentation](https://nuxt.com/)
+- [Nitro Server Guide](https://nitro.unjs.io/)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Mammoth.js DOCX Parser](https://github.com/mwilliamson/mammoth.js)
+
+## Summary
+
+✅ Complete Nuxt 4 conversion
+✅ All functionality ported to Node.js/TypeScript
+✅ Single integrated application
+✅ No separate backend needed
+✅ Fully responsive UI
+✅ Production-ready build system
+✅ OpenAI integration for suggestions

@@ -16,17 +16,11 @@ export default defineNuxtConfig({
 
   // Nitro server configuration
   nitro: {
-    // Proxy API requests to Go backend
-    routeRules: {
-      '/api/tce/**': {
-        proxy: process.env.GO_BACKEND_URL || 'http://localhost:8080/api/tce/**'
+    storage: {
+      fs: {
+        driver: 'fs',
+        base: './data'
       }
-    },
-    // Enable CORS for development
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     }
   },
 
@@ -42,8 +36,9 @@ export default defineNuxtConfig({
 
   // Environment variables
   runtimeConfig: {
+    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     public: {
-      goBackendUrl: process.env.GO_BACKEND_URL || 'http://localhost:8080',
       apiBase: '/api/tce'
     }
   },

@@ -1,26 +1,36 @@
-export default defineEventHandler(async (event) => {
-  const goBackendUrl = process.env.GO_BACKEND_URL || 'http://localhost:8080'
+import { suggestRewrite } from '~/server/utils/llm'
+import type { Lang } from '~/server/utils/types'
 
+export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
 
-    const response = await fetch(`${goBackendUrl}/api/tce/suggest-rewrite`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
+    const {
+      paragraphText,
+      commentTitle,
+      commentMessage,
+      lang = 'lt'
+    } = body
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Backend returned ${response.status}: ${errorText}`)
+    if (!paragraphText) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Paragraph text is required'
+      })
     }
 
-    const result = await response.json()
-    return result
+    const suggestion = await suggestRewrite(
+      paragraphText,
+      commentTitle,
+      commentMessage,
+      lang as Lang
+    )
+
+    return {
+      suggestion
+    }
   } catch (error: any) {
-    console.error('Suggest-rewrite request failed:', error.message)
+    console.error('Suggest-rewrite request failed:', error)
     throw createError({
       statusCode: 500,
       statusMessage: 'Failed to generate suggestion',
