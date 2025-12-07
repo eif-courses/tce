@@ -1,0 +1,26 @@
+{
+  "name": "tce-nuxt",
+  "version": "1.0.0",
+  "description": "TCE - Document Analysis Engine with Nuxt 4 and Nitro",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "preview": "nuxi preview",
+    "generate": "nuxi generate",
+    "lint": "nuxi lint"
+  },
+  "dependencies": {
+    "nuxt": "^4.0.0",
+    "vue": "^3.4.0",
+    "mammoth": "^1.6.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.52.0",
+    "nanoid": "^4.0.2"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.4.0",
+    "@types/node": "^20.0.0",
+    "@types/js-yaml": "^4.0.5"
+  }
+}
