@@ -15,7 +15,18 @@ export interface ContentBlock {
   content: TextContent | ImageContent | TableContent | HeadingContent | ListContent
 }
 
-export interface TextContent {
+export interface TextFormatting {
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  fontSize?: number
+  align?: 'left' | 'center' | 'right' | 'justify'
+  lineSpacing?: number
+  spacingBefore?: number
+  spacingAfter?: number
+}
+
+export interface TextContent extends TextFormatting {
   text: string
 }
 
@@ -57,6 +68,8 @@ export interface Comment {
   sectionLabel: string
   title: string
   message: string
+  subCategory?: 'alignment' | 'spacing' | 'citation' | 'image-reference' | 'font' | 'general'
+  suggestedValue?: string
 }
 
 export interface CheckResponse {

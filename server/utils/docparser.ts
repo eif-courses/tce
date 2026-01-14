@@ -1,34 +1,62 @@
 import mammoth from 'mammoth'
 import { nanoid } from 'nanoid'
-import type { ContentBlock, Paragraph, Section } from './types'
+import type { ContentBlock, Paragraph, Section, TextFormatting } from './types'
 
 export interface ParsedDocument {
   sections: Section[]
   paragraphs: Paragraph[]
   contentBlocks: ContentBlock[]
   text: string
+  images: Array<{ id: string; alt: string; caption?: string }>
+}
+
+interface ParagraphNode {
+  element: string
+  text: string
+  formatting?: TextFormatting
+  children?: any[]
 }
 
 export async function parseDOCX(fileBuffer: Buffer): Promise<ParsedDocument> {
   try {
-    const result = await mammoth.extractRawText({ buffer: fileBuffer })
-    const text = result.value
+    // Extract with formatting information
+    const result = await mammoth.convertToHtml({ buffer: fileBuffer })
+    const rawText = await mammoth.extractRawText({ buffer: fileBuffer })
+    const text = rawText.value
 
-    // Parse into basic sections and paragraphs
+    // Parse into sections and paragraphs with formatting
     const sections = detectSections(text)
     const paragraphs = createParagraphs(text, sections)
-    const contentBlocks = createContentBlocks(text, sections)
+    const contentBlocks = createContentBlocks(text, sections, result)
+    const images = extractImages(result)
 
     return {
       sections,
       paragraphs,
       contentBlocks,
-      text
+      text,
+      images
     }
   } catch (error) {
     console.error('DOCX parsing error:', error)
     throw new Error('Failed to parse DOCX file')
   }
+}
+
+function extractImages(htmlResult: any): Array<{ id: string; alt: string; caption?: string }> {
+  const images: Array<{ id: string; alt: string; caption?: string }> = []
+  const imgRegex = /<img[^>]*alt="([^"]*)"/g
+  let match
+
+  while ((match = imgRegex.exec(htmlResult.value)) !== null) {
+    images.push({
+      id: `img-${nanoid(8)}`,
+      alt: match[1] || 'Figure',
+      caption: match[1] || undefined
+    })
+  }
+
+  return images
 }
 
 function detectSections(text: string): Section[] {
@@ -103,7 +131,7 @@ function createParagraphs(text: string, sections: Section[]): Paragraph[] {
   return paragraphs
 }
 
-function createContentBlocks(text: string, sections: Section[]): ContentBlock[] {
+function createContentBlocks(text: string, sections: Section[], htmlResult: any): ContentBlock[] {
   const blocks: ContentBlock[] = []
   const lines = text.split('\n')
 
@@ -127,13 +155,17 @@ function createContentBlocks(text: string, sections: Section[]): ContentBlock[] 
     // Skip very short lines (headers)
     if (trimmed.length < 10) return
 
-    // Create paragraph block
+    // Detect formatting by analyzing HTML
+    const formatting = extractFormatting(htmlResult.value, trimmed)
+
+    // Create paragraph block with formatting
     blocks.push({
       id: `block-${nanoid(8)}`,
       sectionId: currentSectionId,
       type: 'paragraph',
       content: {
-        text: trimmed
+        text: trimmed,
+        ...formatting
       }
     })
 
@@ -141,4 +173,33 @@ function createContentBlocks(text: string, sections: Section[]): ContentBlock[] 
   })
 
   return blocks
+}
+
+function extractFormatting(html: string, paragraphText: string): TextFormatting {
+  const formatting: TextFormatting = {}
+
+  // Extract paragraph alignment from HTML
+  const alignMatch = html.match(/<p[^>]*style="[^"]*text-align:\s*(left|center|right|justify)[^"]*"/) ||
+                      html.match(/<p[^>]*align="(left|center|right|justify)"/)
+
+  if (alignMatch) {
+    formatting.align = alignMatch[1] as 'left' | 'center' | 'right' | 'justify'
+  }
+
+  // Check for bold
+  if (new RegExp(`<b>[^<]*${paragraphText.substring(0, 20)}`, 'i').test(html) ||
+      new RegExp(`<strong>[^<]*${paragraphText.substring(0, 20)}`, 'i').test(html)) {
+    formatting.bold = true
+  }
+
+  // Check for italic
+  if (new RegExp(`<i>[^<]*${paragraphText.substring(0, 20)}`, 'i').test(html) ||
+      new RegExp(`<em>[^<]*${paragraphText.substring(0, 20)}`, 'i').test(html)) {
+    formatting.italic = true
+  }
+
+  // Default values
+  if (!formatting.align) formatting.align = 'left'
+
+  return formatting
 }
