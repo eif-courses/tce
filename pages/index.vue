@@ -342,6 +342,58 @@ function getImageMimeType(base64: string): string {
   if (base64.startsWith('UklGR')) return 'image/webp'
   return 'image/png' // default
 }
+
+// Get comments for a specific block
+function getBlockComments(blockId: string): Comment[] {
+  return comments.value.filter(c => c.paragraphId === blockId)
+}
+
+// Get CSS class for text alignment
+function getAlignmentClass(align?: string): string {
+  const alignMap: Record<string, string> = {
+    'left': 'text-left',
+    'center': 'text-center',
+    'right': 'text-right',
+    'justify': 'text-justify'
+  }
+  return alignMap[align || 'left'] || 'text-left'
+}
+
+// Get background color class for category
+function getCategoryBgClass(category: string): string {
+  const categoryColorMap: Record<string, string> = {
+    'structure': 'bg-amber-500 hover:bg-amber-600',
+    'content': 'bg-sky-500 hover:bg-sky-600',
+    'language': 'bg-emerald-500 hover:bg-emerald-600',
+    'formatting': 'bg-rose-500 hover:bg-rose-600'
+  }
+  return categoryColorMap[category] || 'bg-gray-500'
+}
+
+// Get formatting CSS classes
+function getFormattingClasses(block: ContentBlock): string {
+  const classes: string[] = []
+  const content = (block.content as any)
+
+  if (content.bold) classes.push('font-bold')
+  if (content.italic) classes.push('italic')
+  if (content.underline) classes.push('underline')
+
+  return classes.join(' ')
+}
+
+// Get formatting inline styles
+function getFormattingStyles(block: ContentBlock): Record<string, string> {
+  const styles: Record<string, string> = {}
+  const content = (block.content as any)
+
+  if (content.fontSize) styles.fontSize = `${content.fontSize}px`
+  if (content.lineSpacing) styles.lineHeight = content.lineSpacing
+  if (content.spacingBefore) styles.marginTop = `${content.spacingBefore}px`
+  if (content.spacingAfter) styles.marginBottom = `${content.spacingAfter}px`
+
+  return styles
+}
 </script>
 
 <template>
@@ -571,13 +623,34 @@ function getImageMimeType(base64: string): string {
                     <p
                       v-if="block.type === 'paragraph'"
                       :id="block.id"
-                      class="leading-relaxed text-slate-700 transition-all"
-                      :class="
-                        selectedBlockId === block.id
-                          && 'bg-blue-50 border-l-4 border-blue-600 pl-3 -ml-3 py-1'
-                      "
+                      class="leading-relaxed text-slate-700 transition-all relative"
+                      :class="[
+                        selectedBlockId === block.id && 'bg-blue-50 border-l-4 border-blue-600 pl-3 -ml-3 py-1',
+                        getAlignmentClass((block.content as any).align),
+                        getFormattingClasses(block)
+                      ]"
+                      :style="getFormattingStyles(block)"
                     >
                       {{ (block.content as TextContent).text }}
+                      <!-- Show comment indicators -->
+                      <span
+                        v-if="getBlockComments(block.id).length > 0"
+                        class="inline-flex gap-1 ml-2"
+                      >
+                        <span
+                          v-for="comment in getBlockComments(block.id)"
+                          :key="comment.id"
+                          class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold rounded-full text-white cursor-pointer hover:shadow-md"
+                          :class="getCategoryBgClass(comment.category)"
+                          :title="`${comment.title}: ${comment.message}`"
+                          @click.stop="selectComment(comment)"
+                        >
+                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12a1 1 0 100-2 1 1 0 000 2z" />
+                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                          </svg>
+                        </span>
+                      </span>
                     </p>
 
                     <!-- Heading -->
@@ -784,7 +857,17 @@ function getImageMimeType(base64: string): string {
               </span>
             </div>
             <h4 class="text-xs font-bold text-slate-900 mb-1">{{ comment.title }}</h4>
-            <p class="text-xs text-slate-600 leading-relaxed mb-3">{{ comment.message }}</p>
+            <p class="text-xs text-slate-600 leading-relaxed mb-2">{{ comment.message }}</p>
+
+            <!-- Show formatting suggestion if available -->
+            <div v-if="comment.suggestedValue" class="mb-3 p-2 bg-slate-50 rounded border border-slate-200">
+              <p class="text-xs text-slate-500 mb-1">
+                {{ docLanguage === 'en' ? 'Suggested:' : 'Siūloma:' }}
+              </p>
+              <p class="text-xs font-mono text-slate-700 bg-white p-1 rounded">
+                {{ comment.suggestedValue }}
+              </p>
+            </div>
 
             <!-- LLM suggestion area -->
             <div v-if="comment.category === 'language' || comment.category === 'content'">

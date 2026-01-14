@@ -29,6 +29,10 @@ export class DocumentAnalyzer {
     this.checkLanguageStyle(paragraphs, contentBlocks, comments)
     this.checkContentQuality(paragraphs, contentBlocks, comments)
     this.checkFormatting(contentBlocks, comments)
+    this.checkCitations(contentBlocks, comments)
+    this.checkImageReferences(contentBlocks, comments)
+    this.checkTextAlignment(contentBlocks, comments)
+    this.checkSpacing(contentBlocks, comments)
 
     // Update section issue counts
     const updatedSections = this.updateSectionIssues(sections, comments)
@@ -189,6 +193,126 @@ export class DocumentAnalyzer {
           : 'Paveikslėliai turėtų turėti aprašomąsias antraštes.'
       })
     })
+  }
+
+  private checkCitations(contentBlocks: ContentBlock[], comments: Comment[]): void {
+    // Check for missing citations in body text
+    const citationPattern = /\[(\d+|[A-Za-z\s]+)\]|(\([^)]*,\s*\d{4}\))/g
+
+    contentBlocks.forEach((block) => {
+      if (block.type === 'paragraph' && 'text' in block.content) {
+        const text = (block.content as any).text
+        if (text.length > 100 && !citationPattern.test(text) &&
+            !text.toLowerCase().includes('introduction') &&
+            !text.toLowerCase().includes('abstract')) {
+          comments.push({
+            id: `comment-${nanoid(8)}`,
+            paragraphId: block.id,
+            category: 'content',
+            severity: 'minor',
+            sectionLabel: 'Content',
+            subCategory: 'citation',
+            title: this.lang === 'en' ? 'Missing citation' : 'Trūksta citatos',
+            message: this.lang === 'en'
+              ? 'This paragraph may need citations to support the claims made.'
+              : 'Šiame paragrafe gali reikėti citatų paremti teiginius.'
+          })
+        }
+      }
+    })
+  }
+
+  private checkImageReferences(contentBlocks: ContentBlock[], comments: Comment[]): void {
+    // Find all images
+    const images = contentBlocks.filter(b => b.type === 'image')
+    const allText = contentBlocks
+      .filter(b => b.type === 'paragraph')
+      .map(b => (b.content as any).text || '')
+      .join(' ')
+      .toLowerCase()
+
+    images.forEach((img) => {
+      const alt = ((img.content as any).alt || '').toLowerCase()
+      const caption = ((img.content as any).caption || '').toLowerCase()
+
+      // Check if image is referenced in text
+      const figureKeywords = ['figure', 'fig', 'image', 'pav', 'iliustracija']
+      const isMentioned = figureKeywords.some(keyword => allText.includes(keyword))
+
+      if (!isMentioned && alt.length > 0) {
+        comments.push({
+          id: `comment-${nanoid(8)}`,
+          paragraphId: img.id,
+          category: 'formatting',
+          severity: 'minor',
+          sectionLabel: 'Formatting',
+          subCategory: 'image-reference',
+          title: this.lang === 'en' ? 'Image not referenced in text' : 'Paveiksliukas nėra minėtas tekste',
+          message: this.lang === 'en'
+            ? `The image "${alt}" should be referenced in the document text (e.g., "See Figure X").`
+            : `Paveiksliukas "${alt}" turėtų būti minėtas dokumento tekste (pvz., "Žr. 1 pav.").`
+        })
+      }
+    })
+  }
+
+  private checkTextAlignment(contentBlocks: ContentBlock[], comments: Comment[]): void {
+    // Check for improper text alignment
+    contentBlocks.forEach((block) => {
+      if (block.type === 'paragraph' && 'align' in block.content) {
+        const align = (block.content as any).align
+
+        // Academic text should generally be left-aligned or justified
+        if (align === 'center' || align === 'right') {
+          comments.push({
+            id: `comment-${nanoid(8)}`,
+            paragraphId: block.id,
+            category: 'formatting',
+            severity: 'minor',
+            sectionLabel: 'Formatting',
+            subCategory: 'alignment',
+            title: this.lang === 'en' ? 'Unusual text alignment' : 'Nestandartinis teksto lygiavimas',
+            message: this.lang === 'en'
+              ? `This paragraph is ${align}-aligned. Academic text should typically be left-aligned or justified.`
+              : `Šis paragrafas yra ${align}-lygiuotas. Akademinis tekstas paprastai turėtų būti kairėje arba pasverto lygiuotas.`,
+            suggestedValue: 'left'
+          })
+        }
+      }
+    })
+  }
+
+  private checkSpacing(contentBlocks: ContentBlock[], comments: Comment[]): void {
+    // Check for inconsistent spacing
+    const spacings = contentBlocks
+      .filter(b => b.type === 'paragraph' && 'spacingAfter' in b.content)
+      .map(b => (b.content as any).spacingAfter)
+      .filter(s => s !== undefined)
+
+    if (spacings.length > 0) {
+      const avgSpacing = spacings.reduce((a, b) => a + b, 0) / spacings.length
+
+      contentBlocks.forEach((block) => {
+        if (block.type === 'paragraph' && 'spacingAfter' in block.content) {
+          const spacing = (block.content as any).spacingAfter
+          if (spacing && Math.abs(spacing - avgSpacing) > avgSpacing * 0.5) {
+            comments.push({
+              id: `comment-${nanoid(8)}`,
+              paragraphId: block.id,
+              category: 'formatting',
+              severity: 'minor',
+              sectionLabel: 'Formatting',
+              subCategory: 'spacing',
+              title: this.lang === 'en' ? 'Inconsistent spacing' : 'Nesuderintas tarpavimas',
+              message: this.lang === 'en'
+                ? 'This paragraph has unusual spacing compared to others. Maintain consistent spacing throughout the document.'
+                : 'Šis paragrafas turi neišvengiatinį tarpavimą, palyginti su kitais. Išlaikykite nuoseklų tarpavimą visame dokumente.',
+              suggestedValue: avgSpacing.toString()
+            })
+          }
+        }
+      })
+    }
   }
 
   private updateSectionIssues(sections: Section[], comments: Comment[]): Section[] {
